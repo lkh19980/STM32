@@ -26,9 +26,9 @@ int __io_getchar(void)
 
 	return ch;
 }
-void ProgramStart()
+void ProgramStart(char *name)
 {
 	  printf("\033[2J\033[1;1H\n");// y;xH : (x,y)move axis
-	  printf("Program ready. Press Blue button to start\r\n");
+	  printf("Program(%s) ready. Press Blue button to start\r\n",name);
 	  while(HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin)!= 0); //B1 for start
 }

@@ -98,16 +98,27 @@ int main(void)
   MX_USART2_UART_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
+  ProgramStart("Timer");
 
+  HAL_TIM_Base_Start_IT(&htim3);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  int mode = 1;
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  if(mode == 1)
+	  	  {
+	  		  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin,1); //PA5
+	  		  HAL_Delay(500); //500ms
+	  		  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin,0); //PA5
+	  		  HAL_Delay(500); //500ms
+
+	  	  }
   }
   /* USER CODE END 3 */
 }
@@ -179,7 +190,7 @@ static void MX_TIM3_Init(void)
   htim3.Instance = TIM3;
   htim3.Init.Prescaler = 8400-1;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 10000-1;
+  htim3.Init.Period = 50000-1;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
