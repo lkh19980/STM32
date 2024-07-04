@@ -21,8 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdio.h>
-#include <stdlib.h>
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -41,11 +40,11 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+TIM_HandleTypeDef htim3;
+
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-char s[200]; // output buffer
-char b[200]; // input buffer
 
 /* USER CODE END PV */
 
@@ -53,39 +52,18 @@ char b[200]; // input buffer
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
-int mode = 0;
-//int a = 0;
 int count = 0;
-
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	switch(GPIO_Pin)
-	{
-	case  B1_Pin:
-		mode++;
-		if(mode>1) mode = 0;
-	break;
-	case  Switch_Pin:
-		printf("%d times pressed\r\n", count++);
-		//sprintf(s,"%d times pressed\r\n", count++);
-		//puts(s);
-	break;
-	}
-	//mode ++;
-	//if(mode > 1) mode = 0;
-	//mode =0;
-	//if(a == 0) a = 1;
-	//else a = 0;
+	printf("Timer3 elapsed%d \r\n",count++);
 }
-
-
 /* USER CODE END 0 */
 
 /**
@@ -118,59 +96,15 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-  //printf("\033[2J\n"); //clear screen 2J ?���??? 초기?��
-  //printf("\033[1;1H\n");// y;xH : (x,y)move axis
-  //printf("\033[2J\033[1;1H\n");// y;xH : (x,y)move axis
-  //printf("Program started... Input start number : ");
-  //printf("Program ready. Press Blue button to start \n");
-  //while(HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin)!= 0); //B1 for start
-  ProgramStart();
 
-  setvbuf(stdin, NULL, _IONBF, 0); // input buffer clear
-  int i; scanf("%d", &i);
-  printf("your input number : %d\r\n", i);
-  count = i;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  if(mode == 1)
-	  	  {
-	  		  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin,1); //PA5
-	  		  HAL_Delay(500); //500ms
-	  		  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin,0); //PA5
-	  		  HAL_Delay(500); //500ms
-
-	  	  }
-	  /*
-	  switch(mode){
-	  case 1 :
-			  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin,1); //PA5
-			  HAL_Delay(500); //500ms
-			  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin,0); //PA5
-			  HAL_Delay(500); //500ms
-			  break;
-	  case 0 :
-		  	  break;
-	  default :
-		  break;
-	  }
-	  */
-	  /*
-	  a = 0;
-	  //int a = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13);//PC13 : B1
-	  if(a == 0)
-	  {
-		  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin,1); //PA5
-		  HAL_Delay(500); //500ms
-		  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin,0); //PA5
-		  HAL_Delay(500); //500ms
-
-	  }
-	  */
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -222,6 +156,51 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 8400-1;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 10000-1;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
+
 }
 
 /**
@@ -289,19 +268,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : Switch_Pin */
-  GPIO_InitStruct.Pin = Switch_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(Switch_GPIO_Port, &GPIO_InitStruct);
-
-  /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
-
-  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
