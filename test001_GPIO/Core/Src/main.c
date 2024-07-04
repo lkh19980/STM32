@@ -118,7 +118,7 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  printf("\033[2J\n"); //clear screen 2J
+  printf("\033[2J\n"); //clear screen 2J 화면 초기화
   printf("\033[1;1H\n");// y;xH : (x,y)move axis
   /* USER CODE END 2 */
 
