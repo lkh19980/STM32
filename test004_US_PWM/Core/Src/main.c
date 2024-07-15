@@ -40,6 +40,7 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim5;
 
 UART_HandleTypeDef huart2;
@@ -52,6 +53,7 @@ UART_HandleTypeDef huart2;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_TIM3_Init(void);
 static void MX_TIM5_Init(void);
 /* USER CODE BEGIN PFP */
 
@@ -59,52 +61,20 @@ static void MX_TIM5_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void microDelay(int us)
+int ts=0;//,t2=0;
+double dist = 0.0;
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	/*
-	int t1 = htim5.Instance->CNT;
-	while(1)
+	int te = htim5.Instance->CNT;
+	if(GPIO_Pin == Echo_Pin)
 	{
-		int tmp_us = htim5.Instance->CNT - t1; // 경과?���??
-		if(tmp_us > us) break;
+		if(HAL_GPIO_ReadPin(Echo_GPIO_Port,Echo_Pin) == 1) ts = te;
+		else dist = (te - ts) * 0.000170;
 	}
-	*/
-	//while((htim5.Instance->CNT - t1) > us);
-	htim5.Instance->CNT = 0;
-	while(htim5.Instance->CNT < us);
 }
-void Trigger()
-{
-	//TriggerSignal
 
-		  HAL_GPIO_WritePin(Trig_GPIO_Port, Trig_Pin, 1);
-		  microDelay(10);	  //HAL_Delay(0.01);
-		  HAL_GPIO_WritePin(Trig_GPIO_Port, Trig_Pin, 0);
-		  microDelay(10);
-}
-double Distance(void)
-{
-	Trigger();
-	/*
-	  while(1)
-	  {
-		  int e1 = HAL_GPIO_ReadPin(Echo_GPIO_Port,Echo_Pin);
-		  if(e1 == 1) break;
-	  }
-	  */
-		  // Wait util Echo Rising Edge
-		  while(HAL_GPIO_ReadPin(Echo_GPIO_Port,Echo_Pin) != 1);
-		  int t1 = htim5.Instance->CNT;
-		  // Wait until Echo Falling_Edge
-		  while(HAL_GPIO_ReadPin(Echo_GPIO_Port,Echo_Pin) != 0);
-		  int t2 = htim5.Instance->CNT;
-		  double dist = (t2-t1)*0.000170; // meter
-		  dist *= 100;
 
-		  //microDelay(100000);
-
-		  return dist;
-}
 /* USER CODE END 0 */
 
 /**
@@ -137,21 +107,38 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
+  MX_TIM3_Init();
   MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
-  ProgramStart("UltraSonic");
+  ProgramStart("UltraSonic using Interrupt");
   HAL_TIM_Base_Start(&htim5);
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
+  //htim3.Instance->CCR2 = 3; // channel select
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  printf("\033[?25l\n");
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  double d = Distance();
-	  printf("\033[10;10HDistance : %.2f cm\r\n", d);
+	  //double d = Distance();
+	  //double d = dist;
+	  //printf("\033[10;10HDistance : %6.2f cm      \033[9;10H \033[?25l\r\n", dist);
+	  //printf("\033[?25l");  cursor off
+	  //printf("\033[?25h"); cursor on
+	  //printf("\033[A"); cursor up
+	  //printf("\033#3"); double size string upper half
+	  //printf("\033#4"); double size string lower half
+	  //printf("\033[10;10HDistance : %6.2f cm      \r\n", dist);
+	  //printf("\033[10;10H\033#3Distance : %.2f cm    ", dist);
+	  //printf("\033[11;10H\033#4Distance : %.2f cm    \033[9;10H\n", dist);
+
+	  double d = dist *100;
+	  printf("\033[10;10H\033#3Distance : %6.2f cm    ",d);
+	  printf("\033[11;10H\033#4Distance : %6.2f cm    \n",d);
 	  HAL_Delay(100);
   }
   /* USER CODE END 3 */
@@ -201,6 +188,55 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 280-1;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 20000-1;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 6;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
+  HAL_TIM_MspPostInit(&htim3);
+
 }
 
 /**
@@ -301,9 +337,6 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(Trig_GPIO_Port, Trig_Pin, GPIO_PIN_RESET);
-
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
@@ -317,18 +350,15 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : Trig_Pin */
-  GPIO_InitStruct.Pin = Trig_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(Trig_GPIO_Port, &GPIO_InitStruct);
-
   /*Configure GPIO pin : Echo_Pin */
   GPIO_InitStruct.Pin = Echo_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(Echo_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI4_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI4_IRQn);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */

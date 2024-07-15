@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -39,7 +40,7 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim5;
 
 UART_HandleTypeDef huart2;
 
@@ -51,51 +52,92 @@ UART_HandleTypeDef huart2;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
-static void MX_TIM2_Init(void);
+static void MX_TIM5_Init(void);
 /* USER CODE BEGIN PFP */
-/*
-double pitch3[13] = {130.8128, 138.5913, 146.8324, 155.5635, 16.8138, 174.6141, 184.972, 195.9977, 207.6523, 220.0000, 233.0819, 246.9417};
-double pitch4[13] = {261.62, 277.18, 293.66, 311.13, 329.6276, 349.2282, 369.99, 391.99, 415.30, 440, 466.16, 493.88,523.25};
-double pitch5[13] = {523.25, 554.37, 587.33, 622.2540, 659.2551, 698.4565, 739.9888, 783.9909, 830.6094, 880, 932.3275, 987.7666,1046.502};
-double pitch6[13] = {1046.502, 1108.731, 1174.659, 1244.508, 1318.510, 1396.913, 1479.978, 1567.982, 1661.219, 1760, 1864.655, 1975.533, 2093.005};
-*/
-double pitch[][13] = {	{130.8128, 138.5913, 146.8324, 155.5635, 164.8138, 174.6141, 184.9972, 195.9977, 207.6523, 220.0000, 233.0819, 246.9417,261.6256},
-						{261.6256, 277.1826, 293.6648, 311.1270, 329.6276, 349.2282, 369.9944, 391.9954, 415.3047, 440.0000, 466.1638, 493.8833,523.2511},
-						{523.2511, 554.3653, 587.3295, 622.2540, 659.2551, 698.4565, 739.9888, 783.9909, 830.6094, 880.0000, 932.3275, 987.7666,1046.502},
-						{1046.502, 1108.731, 1174.659, 1244.508, 1318.510, 1396.913, 1479.978, 1567.982, 1661.219, 1760.000, 1864.655, 1975.533, 2093.005},
-						{2093.005, 2217.461, 2349.318, 2489.016, 2637.020, 2793.826, 2959.955, 3135.963, 3322.438, 3520.000, 3729.310, 3951.066, 4186.009},
-						{0,}
-};
-enum { DO=0,Do, RE, Re, MI, FA, Fa, SO, So, LA, La, TI};
-void Sound(int octave, int index,int delay)
-{
-	htim2.Instance->PSC =84000000L/(pitch[octave][index]* htim2.Instance->ARR);
-	HAL_Delay(delay*250);
-}
-Song[] = {MI,Re,MI,Re,MI,TI,RE,DO,RA,DO,MI,RA,TI,};
-Rythm[]= {};
-//Song[] = { DO, RE, MI,FA, -1};
-//Rythm[] = { 4, 3, 4, 2};
-//for(;Song[i] != -1;i++);
-//while(Song[i] != -1);
-/*
-void PlaySound(int psc, int rtm)
-{
-	htim2.Instance->PSC = psc;
-	HAL_delay(rtm*125);
-}
-*/
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-int mux = 0;
+int t1=0, t2=0;
+int ts=0;//,t2=0;
+double dist = 0.0;
+void microDelay(int us)
+{
+	/*
+	int t1 = htim5.Instance->CNT;
+	while(1)
+	{
+		int tmp_us = htim5.Instance->CNT - t1; // 경과?���??????????????????
+		if(tmp_us > us) break;
+	}
+	*/
+	//while((htim5.Instance->CNT - t1) > us);
+	htim5.Instance->CNT = 0;
+	while(htim5.Instance->CNT < us);
+}
+///*
+void Trigger()
+{
+	//TriggerSignal
+
+		  HAL_GPIO_WritePin(Trig_GPIO_Port, Trig_Pin, 1);
+		  microDelay(10);	  //HAL_Delay(0.01);X
+		  HAL_GPIO_WritePin(Trig_GPIO_Port, Trig_Pin, 0);
+		  microDelay(20);
+}
+///*
+
+double Distance(void)
+{
+	Trigger();
+	/*
+	  while(1)
+	  {
+		  int e1 = HAL_GPIO_ReadPin(Echo_GPIO_Port,Echo_Pin);
+		  if(e1 == 1) break;
+	  }
+	  //*/
+		  // Wait util Echo Rising Edge
+		  while(HAL_GPIO_ReadPin(Echo_GPIO_Port,Echo_Pin) != 1);
+		  t1 = htim5.Instance->CNT;
+		  //int t1 = htim5.Instance->CNT;
+		  // Wait until Echo Falling_Edge
+		  while(HAL_GPIO_ReadPin(Echo_GPIO_Port,Echo_Pin) != 0);
+		  t2 = htim5.Instance->CNT;
+		  //int t2 = htim5.Instance->CNT;
+		  double dist = (t2-t1)*0.000170; // meter
+		  //dist *= 100;
+
+		  //microDelay(100000);
+
+		  return dist;
+}
+//*/
+/*
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	if(++mux>12)mux = 0;
+	if(GPIO_Pin == Echo_Pin)
+	{
+		int tt = htim5.Instance->CNT; // micro count
+		if(HAL_GPIO_ReadPin(Echo_GPIO_Port,Echo_Pin))// v = 0 falling edge v = 1 rising edge
+		{
+			ts = tt;
+		}else
+		{
+			//t2 = tt;
+			dist = (tt - ts) * (0.000170)*100;//meter
+		}
+	}
 }
-
-
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+	if(htim == &htim3)
+	{
+		Trigger();
+	}
+}
+*/
 /* USER CODE END 0 */
 
 /**
@@ -128,81 +170,36 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
-  MX_TIM2_Init();
+  MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
-  ProgramStart("Song");
-  //ProgramStart("PWM");
-  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
-  htim2.Instance->CCR3 = 25; //Duty rate
+  ProgramStart("UltraSonic GPIO");
+  HAL_TIM_Base_Start(&htim5);
+  //HAL_TIM_Base_Start_IT(&htim3);
+  //HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
+  //htim3.Instance->CCR2 = 3; // channel select
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  //int sn = 2800; //C3
+
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  //htim2.Instance->ARR = sn + mux * 10;
-	  //printf("Current ARR : %d \r\n", htim2.Instance->ARR); //ARR cannot control
-	  //htim2.Instance->PSC = 642-35*mux;//sn / mux; 190 95
-	  //htim2.Instance->PSC =84000000L/(pitch3[mux]* htim2.Instance->ARR);
-	  Sound(3,7,2);
-	  Sound(3,7,1);
-	  Sound(3,9,1);
-	  Sound(3,7,4);
-	  Sound(3,4,2);
-	  Sound(3,4,1);
-	  Sound(3,5,1);
-	  Sound(3,4,4);
-	  //Sound(4,0,2);
-	  htim2.Instance->CCR3=0;
-	  HAL_Delay(500);
-	  htim2.Instance->CCR3=25;
-	  //Sound(5,0,2);
-	  Sound(3,2,3);
-	  Sound(3,0,1);
-	  Sound(2,9,2);
-	  Sound(3,0,2);
-	  Sound(2,7,4);
-	  //Sound(4,0,4);
-	  htim2.Instance->CCR3=0;
-	  HAL_Delay(1000);
-	  htim2.Instance->CCR3=25;
-	  //Sound(5,0,4);
-	  Sound(2,9,2);
-	  Sound(3,0,2);
-	  Sound(2,9,2);
-	  Sound(2,7,2);
-	  Sound(3,0,2);
-	  Sound(3,4,2);
-	  Sound(3,7,4);
-	  htim2.Instance->CCR3=0;
-	  HAL_Delay(500);
-	  htim2.Instance->CCR3=25;
-	  Sound(5,0,2);
-	  Sound(3,7,2);
-	  Sound(3,9,1);
-	  Sound(3,7,1);
-	  Sound(3,4,2);
-	  Sound(3,2,2);
-	  Sound(3,0,4);
-	  //Sound(5,0,4);
-	  //HAL_Delay(1000);
-	  htim2.Instance->CCR3=0;
-	  int f = 84000000L/(htim2.Instance->PSC * htim2.Instance->ARR);
-	  printf("Current Hz : %d \r\n", f);
-	  /*
-	  for(int i = 0; Song[i] != -1; i++)
-	  {
-		  PlaySound(Song[i], Rythm[i]);
-	  }
-	  htim2.Instance->CCR3 = 0;
-	  */
-	  printf("연주가 끝났습니다. B1버튼을 누리시면 다시 시작됩니다. ... \r\n");
-	  Wait();
-
+	  double d = Distance()*100;
+	  //double d = dist;
+	  //printf("\033[10;10HDistance : %6.2f cm      \033[9;10H \033[?25l\r\n", dist);
+	  //printf("\033[?25l");  cursor off
+	  //printf("\033[?25h"); cursor on
+	  //printf("\033[A"); cursor up
+	  //printf("\033[#3"); double size string upper half
+	  //printf("\033[#4"); double size string lower half
+	  //printf("\033[10;10HDistance : %6.2f cm      \r\n", dist);
+	  printf("\033[?25l");  //cursor off
+	  printf("\033[10;10H\033#3Distance : %.2f cm    ", d);
+	  printf("\033[11;10H\033#4Distance : %.2f cm    \033[9;10H\n", d);
+	  HAL_Delay(100);
   }
   /* USER CODE END 3 */
 }
@@ -254,51 +251,47 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief TIM2 Initialization Function
+  * @brief TIM5 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_TIM2_Init(void)
+static void MX_TIM5_Init(void)
 {
 
-  /* USER CODE BEGIN TIM2_Init 0 */
+  /* USER CODE BEGIN TIM5_Init 0 */
 
-  /* USER CODE END TIM2_Init 0 */
+  /* USER CODE END TIM5_Init 0 */
 
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
-  TIM_OC_InitTypeDef sConfigOC = {0};
 
-  /* USER CODE BEGIN TIM2_Init 1 */
+  /* USER CODE BEGIN TIM5_Init 1 */
 
-  /* USER CODE END TIM2_Init 1 */
-  htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 8400-1;
-  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = (1000/1)-1;
-  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
+  /* USER CODE END TIM5_Init 1 */
+  htim5.Instance = TIM5;
+  htim5.Init.Prescaler = 84-1;
+  htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim5.Init.Period = 4294967295;
+  htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim5.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim5) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim5, &sClockSourceConfig) != HAL_OK)
   {
     Error_Handler();
   }
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim5, &sMasterConfig) != HAL_OK)
   {
     Error_Handler();
   }
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM2_Init 2 */
+  /* USER CODE BEGIN TIM5_Init 2 */
 
-  /* USER CODE END TIM2_Init 2 */
-  HAL_TIM_MspPostInit(&htim2);
+  /* USER CODE END TIM5_Init 2 */
 
 }
 
@@ -355,6 +348,9 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(Trig_GPIO_Port, Trig_Pin, GPIO_PIN_RESET);
+
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
@@ -368,9 +364,18 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
-  /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+  /*Configure GPIO pin : Echo_Pin */
+  GPIO_InitStruct.Pin = Echo_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(Echo_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : Trig_Pin */
+  GPIO_InitStruct.Pin = Trig_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(Trig_GPIO_Port, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */

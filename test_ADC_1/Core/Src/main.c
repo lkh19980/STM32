@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "stdlib.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -39,7 +40,7 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-TIM_HandleTypeDef htim2;
+ADC_HandleTypeDef hadc1;
 
 UART_HandleTypeDef huart2;
 
@@ -51,50 +52,13 @@ UART_HandleTypeDef huart2;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
-static void MX_TIM2_Init(void);
+static void MX_ADC1_Init(void);
 /* USER CODE BEGIN PFP */
-/*
-double pitch3[13] = {130.8128, 138.5913, 146.8324, 155.5635, 16.8138, 174.6141, 184.972, 195.9977, 207.6523, 220.0000, 233.0819, 246.9417};
-double pitch4[13] = {261.62, 277.18, 293.66, 311.13, 329.6276, 349.2282, 369.99, 391.99, 415.30, 440, 466.16, 493.88,523.25};
-double pitch5[13] = {523.25, 554.37, 587.33, 622.2540, 659.2551, 698.4565, 739.9888, 783.9909, 830.6094, 880, 932.3275, 987.7666,1046.502};
-double pitch6[13] = {1046.502, 1108.731, 1174.659, 1244.508, 1318.510, 1396.913, 1479.978, 1567.982, 1661.219, 1760, 1864.655, 1975.533, 2093.005};
-*/
-double pitch[][13] = {	{130.8128, 138.5913, 146.8324, 155.5635, 164.8138, 174.6141, 184.9972, 195.9977, 207.6523, 220.0000, 233.0819, 246.9417,261.6256},
-						{261.6256, 277.1826, 293.6648, 311.1270, 329.6276, 349.2282, 369.9944, 391.9954, 415.3047, 440.0000, 466.1638, 493.8833,523.2511},
-						{523.2511, 554.3653, 587.3295, 622.2540, 659.2551, 698.4565, 739.9888, 783.9909, 830.6094, 880.0000, 932.3275, 987.7666,1046.502},
-						{1046.502, 1108.731, 1174.659, 1244.508, 1318.510, 1396.913, 1479.978, 1567.982, 1661.219, 1760.000, 1864.655, 1975.533, 2093.005},
-						{2093.005, 2217.461, 2349.318, 2489.016, 2637.020, 2793.826, 2959.955, 3135.963, 3322.438, 3520.000, 3729.310, 3951.066, 4186.009},
-						{0,}
-};
-enum { DO=0,Do, RE, Re, MI, FA, Fa, SO, So, LA, La, TI};
-void Sound(int octave, int index,int delay)
-{
-	htim2.Instance->PSC =84000000L/(pitch[octave][index]* htim2.Instance->ARR);
-	HAL_Delay(delay*250);
-}
-Song[] = {MI,Re,MI,Re,MI,TI,RE,DO,RA,DO,MI,RA,TI,};
-Rythm[]= {};
-//Song[] = { DO, RE, MI,FA, -1};
-//Rythm[] = { 4, 3, 4, 2};
-//for(;Song[i] != -1;i++);
-//while(Song[i] != -1);
-/*
-void PlaySound(int psc, int rtm)
-{
-	htim2.Instance->PSC = psc;
-	HAL_delay(rtm*125);
-}
-*/
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-int mux = 0;
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-	if(++mux>12)mux = 0;
-}
-
 
 /* USER CODE END 0 */
 
@@ -128,81 +92,66 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
-  MX_TIM2_Init();
+  MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
-  ProgramStart("Song");
-  //ProgramStart("PWM");
-  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
-  htim2.Instance->CCR3 = 25; //Duty rate
+  ProgramStart("ADC Polling");
+  printf("\033[2J\033[?25l\n");
+  int cx=0, cy=0;
+  int sy = 24, sx = 81;
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  //int sn = 2800; //C3
+  int i = 0, j= 0;
+  int aa= 0, bb = 0;
   while (1)
   {
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  //htim2.Instance->ARR = sn + mux * 10;
-	  //printf("Current ARR : %d \r\n", htim2.Instance->ARR); //ARR cannot control
-	  //htim2.Instance->PSC = 642-35*mux;//sn / mux; 190 95
-	  //htim2.Instance->PSC =84000000L/(pitch3[mux]* htim2.Instance->ARR);
-	  Sound(3,7,2);
-	  Sound(3,7,1);
-	  Sound(3,9,1);
-	  Sound(3,7,4);
-	  Sound(3,4,2);
-	  Sound(3,4,1);
-	  Sound(3,5,1);
-	  Sound(3,4,4);
-	  //Sound(4,0,2);
-	  htim2.Instance->CCR3=0;
-	  HAL_Delay(500);
-	  htim2.Instance->CCR3=25;
-	  //Sound(5,0,2);
-	  Sound(3,2,3);
-	  Sound(3,0,1);
-	  Sound(2,9,2);
-	  Sound(3,0,2);
-	  Sound(2,7,4);
-	  //Sound(4,0,4);
-	  htim2.Instance->CCR3=0;
-	  HAL_Delay(1000);
-	  htim2.Instance->CCR3=25;
-	  //Sound(5,0,4);
-	  Sound(2,9,2);
-	  Sound(3,0,2);
-	  Sound(2,9,2);
-	  Sound(2,7,2);
-	  Sound(3,0,2);
-	  Sound(3,4,2);
-	  Sound(3,7,4);
-	  htim2.Instance->CCR3=0;
-	  HAL_Delay(500);
-	  htim2.Instance->CCR3=25;
-	  Sound(5,0,2);
-	  Sound(3,7,2);
-	  Sound(3,9,1);
-	  Sound(3,7,1);
-	  Sound(3,4,2);
-	  Sound(3,2,2);
-	  Sound(3,0,4);
-	  //Sound(5,0,4);
-	  //HAL_Delay(1000);
-	  htim2.Instance->CCR3=0;
-	  int f = 84000000L/(htim2.Instance->PSC * htim2.Instance->ARR);
-	  printf("Current Hz : %d \r\n", f);
-	  /*
-	  for(int i = 0; Song[i] != -1; i++)
-	  {
-		  PlaySound(Song[i], Rythm[i]);
-	  }
-	  htim2.Instance->CCR3 = 0;
-	  */
-	  printf("연주가 끝났습니다. B1버튼을 누리시면 다시 시작됩니다. ... \r\n");
-	  Wait();
+	  HAL_ADC_Start(&hadc1); // chip on
+	  HAL_ADC_PollForConversion(&hadc1,1000);//Start Conversion Trigger
+	  int x = HAL_ADC_GetValue(&hadc1);
+	  //HAL_ADC_Stop(&hadc1); // skip available
+	  HAL_ADC_Start(&hadc1); // chip on
+	  HAL_ADC_PollForConversion(&hadc1,1000);//Start Conversion Trigger
+	  int y = HAL_ADC_GetValue(&hadc1);
+	  //HAL_ADC_Start(&hadc1); // chip on
+	  //HAL_ADC_PollForConversion(&hadc1,1000);//Start Conversion Trigger
+	  int z = HAL_GPIO_ReadPin(Z_Axis_GPIO_Port,Z_Axis_Pin);
+	  //printf("ADC Value : (%d,%d)\r\n",x);
+	  //printf("\033[?25l");
+	  //printf("\033[2J\033[0;0HADC Value : (%d,%d,%d)\n",x,y,z);
+	  //\033[0;0H absolute coordinates
+	  //\033[0:0H relative coordinates
+	  //printf("\033[%d;%dH@\033[A\n",(int)y*23/4000,(int)x*80/4000);
+	  //HAL_Delay(50);
 
+	  char MJM[] = "문지민";
+	  srand(2);
+	  int position[100][2] = {(0,0),(0,0),(0,0),(0,0),};
+	  int xx = (sx * x) / 4096;
+	  int yy = (sy * y) / 4096;dl
+
+	  printf("\033[0;0HADC Value : (%d,%d,%d)\n",xx,yy,z);
+	  printf("\033[%d;%dH \033[%d;%dH@\n",cy,cx,yy,xx);
+	  cx = xx, cy=yy;
+
+	  //position[i++] = (0,rand()%24);
+	  aa = rand()%24;
+	  printf("\033[0;%dH",aa);
+	  printf("\033[%d:%dH%s", bb,aa,"MJM");
+	  if(xx == aa && yy == bb){
+
+		  printf("\033[11;30H\033#3Dead");
+		  printf("\033[12;30H\033#4Dead \n");
+	  }
+	  bb++;
+
+
+	  HAL_Delay(100);
   }
   /* USER CODE END 3 */
 }
@@ -254,51 +203,64 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief TIM2 Initialization Function
+  * @brief ADC1 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_TIM2_Init(void)
+static void MX_ADC1_Init(void)
 {
 
-  /* USER CODE BEGIN TIM2_Init 0 */
+  /* USER CODE BEGIN ADC1_Init 0 */
 
-  /* USER CODE END TIM2_Init 0 */
+  /* USER CODE END ADC1_Init 0 */
 
-  TIM_MasterConfigTypeDef sMasterConfig = {0};
-  TIM_OC_InitTypeDef sConfigOC = {0};
+  ADC_ChannelConfTypeDef sConfig = {0};
 
-  /* USER CODE BEGIN TIM2_Init 1 */
+  /* USER CODE BEGIN ADC1_Init 1 */
 
-  /* USER CODE END TIM2_Init 1 */
-  htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 8400-1;
-  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = (1000/1)-1;
-  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
+  /* USER CODE END ADC1_Init 1 */
+
+  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
+  */
+  hadc1.Instance = ADC1;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
+  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
+  hadc1.Init.ScanConvMode = ENABLE;
+  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.DiscontinuousConvMode = ENABLE;
+  hadc1.Init.NbrOfDiscConversion = 1;
+  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc1.Init.NbrOfConversion = 2;
+  hadc1.Init.DMAContinuousRequests = DISABLE;
+  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  if (HAL_ADC_Init(&hadc1) != HAL_OK)
   {
     Error_Handler();
   }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM2_Init 2 */
 
-  /* USER CODE END TIM2_Init 2 */
-  HAL_TIM_MspPostInit(&htim2);
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_10;
+  sConfig.Rank = 1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_15CYCLES;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_11;
+  sConfig.Rank = 2;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN ADC1_Init 2 */
+
+  /* USER CODE END ADC1_Init 2 */
 
 }
 
@@ -368,9 +330,11 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
-  /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+  /*Configure GPIO pin : Z_Axis_Pin */
+  GPIO_InitStruct.Pin = Z_Axis_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(Z_Axis_GPIO_Port, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
