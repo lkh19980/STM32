@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "myLib.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -56,25 +56,6 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-char buf[500];
-char dum;
-int idx1 = 0;
-int cmdOk1 = 1;
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-	HAL_UART_Transmit(&huart2,&dum,1,10);//where,what,how many data for IT, timeout
-	if(dum == '\r')
-	{
-		HAL_UART_Transmit(&huart2,'\n',1,10);//where,what,how many data for IT, timeout
-		cmdOk1 =1;
-	}
-	else cmdOk1 = 0;
-
-	buf[idx1++] = dum;
-	buf[idx1]='\0';
-
-	HAL_UART_Receive_IT(&huart2,&dum,1);// IT, buffer addr, IT when it over // only one time
-}
 
 /* USER CODE END 0 */
 
@@ -110,8 +91,6 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  ProgramStart("UART Rx-Interruptasdf");
-  HAL_UART_Receive_IT(&huart2,&dum,1); //one time interrupt
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -121,22 +100,6 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    if(cmdOk1 >0)
-    {
-    	//printf(">>");
-    	printf("%s\r\n>>\033[A\n",buf);
-		  idx1=0;
-		  cmdOk1=0;
-    }
-    HAL_Delay(10);
-    /*
-	  if(buf[idx1-1]=='\r')
-	  {
-		  printf("%s\r\n",buf);
-		  idx1=0;
-	  }
-	  */
-	  //HAL_Delay(1000);
   }
   /* USER CODE END 3 */
 }

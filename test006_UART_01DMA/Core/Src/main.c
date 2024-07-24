@@ -36,19 +36,24 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
+extern myBuffer Buf;
+//char buf[100];
 
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
 UART_HandleTypeDef huart2;
+DMA_HandleTypeDef hdma_usart2_rx;
 
 /* USER CODE BEGIN PV */
+int GetBuffer(char* b); // b : char array pointer for destination //return data numbers
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
@@ -56,26 +61,20 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-char buf[500];
-char dum;
-int idx1 = 0;
-int cmdOk1 = 1;
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	HAL_UART_Transmit(&huart2,&dum,1,10);//where,what,how many data for IT, timeout
-	if(dum == '\r')
-	{
-		HAL_UART_Transmit(&huart2,'\n',1,10);//where,what,how many data for IT, timeout
-		cmdOk1 =1;
-	}
-	else cmdOk1 = 0;
 
-	buf[idx1++] = dum;
-	buf[idx1]='\0';
-
-	HAL_UART_Receive_IT(&huart2,&dum,1);// IT, buffer addr, IT when it over // only one time
 }
-
+int n = 1;
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	if(GPIO_Pin == B1_Pin)
+	{
+		//n <<= 1; // n *= 2;
+		if((n<<=1)>8)n= 1;
+		//n =1, 2, 4, 8(Echo Mode)
+	}
+}
 /* USER CODE END 0 */
 
 /**
@@ -107,36 +106,54 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-
-  ProgramStart("UART Rx-Interruptasdf");
-  HAL_UART_Receive_IT(&huart2,&dum,1); //one time interrupt
+  ProgramStart("UART - DMA");
+  HAL_UART_Receive_DMA(&huart2, &Buf, MAX_BUF);//handler, buffer addr, size \generally max memory
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  cls();
+  //printf("\033[3;0H\n");
+  //printf("Memory dump mode      \r\n");
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    if(cmdOk1 >0)
-    {
-    	//printf(">>");
-    	printf("%s\r\n>>\033[A\n",buf);
-		  idx1=0;
-		  cmdOk1=0;
-    }
-    HAL_Delay(10);
-    /*
-	  if(buf[idx1-1]=='\r')
-	  {
-		  printf("%s\r\n",buf);
-		  idx1=0;
-	  }
-	  */
-	  //HAL_Delay(1000);
+	  /*
+	printf("\033[3;0H\n");
+	for (int i = 0; i < 20; i++) //ROW index
+	{
+		for (int j = 0; j < 16; j++) // COULUMN index
+		{
+			printf("%02X ", Buf.v0[(i * 16) + j]);
+			if (j == 7)
+				printf("  ");
+		}
+		printf("\r\n");
+	}
+
+	*/
+	if(n == 8)
+	{
+		//printf("Echo\r\n");
+		char arr[100];
+		if(GetBuffer(arr))//>0
+		{
+			printf("%s\r\n", arr);
+		}
+		HAL_Delay(500);
+	}
+	else
+	{
+		printf("\033[3;0H\n");
+		Dump(n);
+		HAL_Delay(1000);
+	}
+
   }
   /* USER CODE END 3 */
 }
@@ -221,6 +238,22 @@ static void MX_USART2_UART_Init(void)
 }
 
 /**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Stream5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -252,6 +285,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
