@@ -7,6 +7,15 @@
 
 #ifndef INC_MYLIB_H_
 #define INC_MYLIB_H_
+
+typedef struct
+{
+	char *key;//key[6]
+	int op_no;
+
+}myCMDSET;
+
+
 #define MAX_BUF 480
 
 typedef union //share memory
